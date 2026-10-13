@@ -117,6 +117,43 @@
     return this;
   };
 
+  // Half-cylinder lid lying along the X axis: a rounded "barrel top".
+  // Centred at (x,y,z); length = len (along X), radius r (arches up in +Y),
+  // depth 2*r along Z. Flat side faces down.
+  Builder.prototype.lid = function (x, y, z, len, r, seg, color, shade) {
+    seg = seg || 10;
+    var hl = len / 2;
+    var ring = []; // half ring from +Z to -Z over the top
+    for (var i = 0; i <= seg; i++) {
+      var a = Math.PI * (i / seg); // 0..PI
+      ring.push([Math.cos(a) * r, Math.sin(a) * r]); // (z, y)
+    }
+    // curved surface
+    for (var j = 0; j < seg; j++) {
+      var p0 = ring[j], p1 = ring[j + 1];
+      var zx0 = p0[0], y0 = p0[1], zx1 = p1[0], y1 = p1[1];
+      // normal of this strip (average)
+      var nz = (zx0 + zx1) / 2, ny = (y0 + y1) / 2, nl = Math.hypot(nz, ny) || 1;
+      var N = [0, ny / nl, nz / nl];
+      var verts = [
+        x - hl, y + y0, z + zx0, x + hl, y + y0, z + zx0, x + hl, y + y1, z + zx1, x - hl, y + y1, z + zx1
+      ];
+      var norms = [N[0], N[1], N[2], N[0], N[1], N[2], N[0], N[1], N[2], N[0], N[1], N[2]];
+      var base = this._push(verts, norms, color);
+      this.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    }
+    // two end caps (half discs) at x-hl and x+hl
+    function cap(px, nx) {
+      var c = this._push([px, y, z], [nx, 0, 0], shade || color);
+      var rim = [];
+      for (var k = 0; k <= seg; k++) rim.push(this._push([px, y + ring[k][1], z + ring[k][0]], [nx, 0, 0], shade || color));
+      for (var m = 0; m < seg; m++) { if (nx > 0) this.idx.push(c, rim[m], rim[m + 1]); else this.idx.push(c, rim[m + 1], rim[m]); }
+    }
+    cap.call(this, x + hl, 1);
+    cap.call(this, x - hl, -1);
+    return this;
+  };
+
   // Flat quad on the XZ plane (ground), centred (x,y,z), size (w,d).
   Builder.prototype.ground = function (x, y, z, w, d, color) {
     var hw = w / 2, hd = d / 2;

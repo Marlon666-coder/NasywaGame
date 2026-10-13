@@ -234,6 +234,7 @@
       // central tall tower
       b.cylinder(0, 6, cz, 2.6, 7, 18, '#ffd1e3');
       b.cone(0, 13, cz, 3.2, 4.5, 18, '#9a7bea');
+      b.sphere(0, 17.6, cz, 0.5, 8, '#ffd23f');   // gold spire tip
       // heart emblem on tower (two spheres + a cone-ish point via boxes)
       b.sphere(-0.8, 9.6, cz + 2.5, 0.7, 10, '#e8344e');
       b.sphere(0.8, 9.6, cz + 2.5, 0.7, 10, '#e8344e');
@@ -244,9 +245,10 @@
         var tx = towers[ti][0], tz = towers[ti][1];
         b.cylinder(tx, 0, tz, 1.9, 9, 16, '#ffcbe0');
         b.cone(tx, 9, tz, 2.4, 3.4, 16, '#b79cff');
+        b.sphere(tx, 12.4, tz, 0.32, 7, '#ffd23f'); // gold roof tip
         // flag pole + heart
-        b.cylinder(tx, 12.4, tz, 0.08, 1.6, 6, '#3b1f3a');
-        b.box(tx + 0.5, 13.4, tz, 0.9, 0.6, 0.1, '#ff8fb8');
+        b.cylinder(tx, 12.6, tz, 0.08, 1.6, 6, '#3b1f3a');
+        b.box(tx + 0.5, 13.6, tz, 0.9, 0.6, 0.1, '#ff8fb8');
       }
       // front gate (door) + arch
       b.box(0, 1.9, cz + 4.6, 2.6, 3.8, 0.5, '#7a3d6b');
@@ -292,22 +294,30 @@
     /* ---- a chest = base + lid (openable) + glow cube ---- */
     function buildChests() {
       chestObjs = [];
+      var WOOD = '#a9663a', WOOD_D = '#854f2a', GOLD = '#ffd23f', GOLD_D = '#c9971c';
       for (var i = 0; i < 8; i++) {
         var p = CHEST_POS[i];
+        // --- base: wooden crate with gold corner bands + a lock ---
         var baseB = new Builder();
-        baseB.box(0, 0.45, 0, 1.4, 0.9, 1.0, '#9a5a2e', '#7a4522');
-        baseB.box(0, 0.45, 0, 1.45, 0.25, 1.05, '#ffd23f', '#c9971c');
-        baseB.box(0, 0.2, 0, 1.45, 0.25, 1.05, '#ffd23f', '#c9971c');
+        baseB.box(0, 0.4, 0, 1.3, 0.8, 0.95, WOOD, WOOD_D);        // body
+        baseB.box(0, 0.4, 0, 1.34, 0.14, 0.99, GOLD, GOLD_D);     // mid gold band
+        baseB.box(-0.58, 0.4, 0, 0.14, 0.84, 0.99, GOLD, GOLD_D); // left band
+        baseB.box(0.58, 0.4, 0, 0.14, 0.84, 0.99, GOLD, GOLD_D);  // right band
+        baseB.box(0, 0.78, 0.42, 0.22, 0.26, 0.12, GOLD, GOLD_D); // lock plate (front)
+        baseB.box(0, 0.74, 0.47, 0.09, 0.1, 0.06, '#5a2a16');     // keyhole
         var baseMesh = baseB.build(engine);
 
+        // --- lid: rounded gold-trimmed top; local origin at the back hinge edge ---
+        // Built so its flat underside sits at y=0 and it arches up; z=0 is the hinge.
         var lidB = new Builder();
-        // lid pivots around its back edge; model local origin at hinge
-        lidB.box(0, 0, 0.0, 1.4, 0.5, 1.0, '#a9663a', '#8a5230');
-        lidB.box(0, 0.18, 0, 1.45, 0.18, 1.05, '#ffd23f', '#c9971c');
+        lidB.lid(0, 0.0, 0.475, 1.3, 0.42, 10, WOOD, WOOD_D);     // wooden dome, front half (+z)
+        lidB.box(-0.58, 0.2, 0.475, 0.14, 0.3, 0.96, GOLD, GOLD_D);
+        lidB.box(0.58, 0.2, 0.475, 0.14, 0.3, 0.96, GOLD, GOLD_D);
+        lidB.box(0, 0.42, 0.475, 1.34, 0.12, 0.2, GOLD, GOLD_D);  // top ridge band
         var lidMesh = lidB.build(engine);
 
         var glowB = new Builder();
-        glowB.box(0, 0, 0, 0.8, 0.8, 0.8, GIFTS[i].color);
+        glowB.sphere(0, 0, 0, 0.42, 10, GIFTS[i].color);
         var glowMesh = glowB.build(engine);
 
         var baseObj = engine.add({ mesh: baseMesh, model: M.create(), castsShadow: true });
@@ -378,15 +388,12 @@
         // smooth lid open/close
         c.lidAngle += (c.lidTarget - c.lidAngle) * (reducedMotion ? 1 : 0.15);
         var bm = M.create(); M.translate(bm, bm, c.x, 0, c.z); c.base.model = bm;
-        // lid hinge at back edge (z = -0.5), raised to top of base (y=0.7)
-        var lm = M.create(); M.translate(lm, lm, c.x, 0.75, c.z - 0.5);
-        M.rotateY(lm, lm, 0); // face camera-neutral
-        // rotate around X by lidAngle: emulate via manual since M has rotateY only -> use a small rotateX
-        rotateX(lm, c.lidAngle);
-        M.translate(lm, lm, 0, 0.0, 0.5);
+        // lid hinges at the back-top edge of the base; its geometry extends toward +z.
+        var lm = M.create(); M.translate(lm, lm, c.x, 0.8, c.z - 0.475);
+        rotateX(lm, c.lidAngle); // negative angle swings the lid open backward
         c.lid.model = lm;
         if (c.glow.visible) {
-          var gm = M.create(); M.translate(gm, gm, c.x, 1.1 + Math.sin(t * 3 + i) * 0.12, c.z);
+          var gm = M.create(); M.translate(gm, gm, c.x, 1.25 + Math.sin(t * 3 + i) * 0.12, c.z);
           M.rotateY(gm, gm, t * 1.5);
           c.glow.model = gm; c.glow.glow = 0.4 + 0.3 * Math.sin(t * 4 + i);
         }
@@ -417,7 +424,7 @@
         mx /= len; mz /= len;
         // camera basis on the ground plane
         var fwdX = Math.sin(cam.yaw), fwdZ = Math.cos(cam.yaw);   // away from camera
-        var rightX = fwdZ, rightZ = -fwdX;                        // camera right
+        var rightX = -fwdZ, rightZ = fwdX;                        // camera's screen-right
         // mz<0 is "up/forward"; mx>0 is "right"
         var wx = rightX * mx - fwdX * mz, wz = rightZ * mx - fwdZ * mz;
         player.angle = Math.atan2(wx, wz);
@@ -483,8 +490,8 @@
     function render() {
       engine.resize();
       var eye = cameraEye();
-      var target = [cam.tx, 2.2, cam.tz];
-      engine.render(eye, target, 0.92, 0.5, 120);
+      var target = [cam.tx, 3.0, cam.tz];
+      engine.render(eye, target, 0.95, 0.5, 120);
     }
 
     function loop(now) {
@@ -502,7 +509,8 @@
     function start() {
       if (!engine) { if (!tryInit()) { fallbackMode = true; return false; } }
       if (!statics) { setupLighting(); buildStatics(); buildChests(); buildPlayer(); }
-      player.x = 0; player.z = 11; player.angle = Math.PI; cam.tx = 0; cam.tz = 11; cam.yaw = Math.PI;
+      player.x = 0; player.z = 12; player.angle = Math.PI; cam.tx = 0; cam.tz = 12; cam.yaw = Math.PI;
+      cam.dist = 12; cam.height = 8.5;
       engine.resize();
       running = true; lastT = performance.now(); if (!raf) raf = requestAnimationFrame(loop);
       return true;
