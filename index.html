@@ -36,10 +36,10 @@
     <div class="ground"><div class="flowers" data-count="22"></div></div>
   </main>
 
-  <!-- ============ GAME SCREEN (2.5D explorable world) ============ -->
+  <!-- ============ GAME SCREEN (3D explorable world) ============ -->
   <main id="screen-game" class="screen">
-    <!-- The world is drawn here -->
-    <canvas id="world" class="pixel" aria-label="Explorable castle world"></canvas>
+    <!-- The 3D world is rendered here (WebGL2) -->
+    <canvas id="scene" aria-label="Explorable 3D castle world"></canvas>
 
     <!-- HUD -->
     <header class="hud">
@@ -64,7 +64,7 @@
     </div>
 
     <!-- On-screen controls hint (desktop) -->
-    <p id="controls-hint" class="controls-hint">Move: <b>WASD</b> / Arrows &nbsp;·&nbsp; Open: <b>E</b> &nbsp;·&nbsp; Menu: <b>Esc</b></p>
+    <p id="controls-hint" class="controls-hint">Move: <b>WASD</b> / Arrows &nbsp;·&nbsp; Open: <b>E</b> &nbsp;·&nbsp; Rotate: <b>drag</b> / <b>Q</b> <b>R</b> &nbsp;·&nbsp; Menu: <b>Esc</b></p>
 
     <!-- Mobile touch controls -->
     <div id="touch-controls" class="touch-controls" aria-hidden="true">
@@ -131,6 +131,9 @@
   <!-- Screen reader announcements -->
   <div id="live" class="sr-only" aria-live="polite"></div>
 
-  <script src="script.js"></script>
+  <!-- 3D engine (self-contained, no external libraries) -->
+  <script src="engine3d.js"></script>
+  <script src="geometry3d.js"></script>
+  <script src="game3d.js"></script>
 </body>
 </html>
