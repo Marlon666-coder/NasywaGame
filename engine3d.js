@@ -140,6 +140,7 @@
     '}',
     'void main(){',
     '  vec3 N = normalize(vNormal);',
+    '  if(!gl_FrontFacing) N = -N;',  // two-sided: flip normal on back faces
     '  float ndl = max(dot(N, -uLightDir), 0.0);',
     '  float sh = shadowCalc(vLightPos, ndl);',
     '  vec3 diff = uLightColor * ndl * (0.35 + 0.65*sh);',
@@ -181,7 +182,9 @@
     if (!gl) throw new Error('WebGL2 not supported');
     this.gl = gl; this.canvas = canvas;
     gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+    // Culling disabled: our procedural meshes don't guarantee consistent winding,
+    // so we draw both faces to avoid "holes". (Double-sided is cheap at this scale.)
+    gl.disable(gl.CULL_FACE);
 
     this.prog = program(gl, VS, FS);
     this.shadowProg = program(gl, SHADOW_VS, SHADOW_FS);
